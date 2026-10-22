@@ -31,3 +31,18 @@ and stops the managed engine. It does not change the source image.
 Tests of simultaneous clients use a small fake worker to verify that startup
 creates one shared process. The full graphical client workflows were not
 retested as part of this stdio check.
+
+## Clean installation check
+
+A separate check used fresh clones from both public GitHub repositories.
+Both sets of dependencies installed in new Python 3.12 environments.
+The MCP source distribution and wheel built successfully. The wheel was
+installed in a third environment and run from outside the source checkout.
+It exposed seven tools, started the clean MLX engine, generated one PNG with
+a preview, and stopped the managed engine. Only the downloaded model files
+were reused; the engine Python environment was new.
+
+The fresh MCP checkout passed all 17 tests. Claude Code reported the installed
+server as connected. Codex showed the configured stdio command and timeouts.
+Claude Desktop configuration was parsed; its graphical workflow still needs
+a client restart and a user check.
