@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "spriteloom-mcp"
+version = "0.2.0"
+description = "Local pixel-art generation tools and an agent skill for SpriteLoom"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+readme = "README.md"
+dependencies = ["mcp==1.30.0", "websockets>=12,<18", "Pillow>=10,<14", "filelock>=3.16,<5"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+spriteloom-mcp = "spriteloom_mcp.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["spriteloom_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "scripts"]
+
+[project.urls]
+Repository = "https://github.com/AlexPascu007/spriteloom-mcp"
+Engine = "https://github.com/AlexPascu007/spriteloom-mlx"
+Upstream = "https://github.com/vkarach/spriteloom"

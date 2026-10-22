@@ -1,0 +1,11 @@
+interface:
+  display_name: "SpriteLoom"
+  short_description: "Local pixel-art generation through SpriteLoom MCP"
+  default_prompt: "Use $spriteloom to create or edit a local pixel-art sprite."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "spriteloom"
+      description: "Local SpriteLoom MCP server"
+      transport: "stdio"

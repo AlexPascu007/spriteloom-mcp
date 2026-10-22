@@ -1,0 +1,13 @@
+SpriteLoom MCP
+
+This integration builds on the SpriteLoom protocol and pixel-art workflow
+created by Valentyn Karachevtsev (vkarach):
+https://github.com/vkarach/spriteloom
+
+The original SpriteLoom project is licensed under Apache License 2.0.
+The separate spriteloom-mlx repository provides the Apple Silicon engine.
+FLUX.2 Klein 4B weights are supplied by Black Forest Labs under their own
+Apache License 2.0 release. Model weights are downloaded separately.
+
+This is an independent integration. It is not an official release from
+Valentyn Karachevtsev, Black Forest Labs, Anthropic, or OpenAI.
