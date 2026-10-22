@@ -25,17 +25,29 @@ Install the skill by copying or symlinking `skills/spriteloom` into `~/.claude/s
 
 ## Using it from another machine (e.g. a MacBook)
 
-Spriteloom binds to `127.0.0.1:8765` on the GPU machine, so tunnel to it
-instead of exposing it. From the Mac:
+Spriteloom binds to `127.0.0.1:8765` on the GPU machine. With both machines
+on the same [Tailscale](https://tailscale.com) tailnet, forward the port to
+the tailnet on the PC (once; it persists):
 
 ```
-ssh -N -L 8765:127.0.0.1:8765 <user>@<windows-pc>
+tailscale serve --bg --tcp 8765 tcp://127.0.0.1:8765
 ```
 
-(The PC needs OpenSSH Server enabled; Tailscale is an easy way to reach it
-from outside your LAN.) The MCP server runs on the Mac and connects to the
-tunnel on `ws://127.0.0.1:8765`, which is the default. If the tunnel uses a
-different local port, set `SPRITELOOM_URL=ws://127.0.0.1:<port>`.
+Then on the Mac point the MCP server at the PC, using its MagicDNS name or
+Tailscale IP (`tailscale status` lists them):
+
+```
+claude mcp add spriteloom --scope user -e SPRITELOOM_URL=ws://your-host.example:8765 -- uv run --with "mcp<2" --with websockets --with pillow /path/to/spriteloom-mcp/server.py
+```
+
+The forward is reachable by every device on the tailnet and Spriteloom has no
+authentication, so only do this on a tailnet you control. Undo with
+`tailscale serve --tcp=8765 off`.
+
+Without Tailscale, an SSH tunnel works too
+(`ssh -N -L 8765:127.0.0.1:8765 <user>@<pc>`, needs OpenSSH Server on the PC),
+and the default `SPRITELOOM_URL` then applies.
+
 Image inputs (`image_path`, `mask_path`) are read on the machine running the
 MCP server, and outputs are written there too.
 
