@@ -40,6 +40,8 @@ class Paths:
     root: Path
     home: Path
     engine_root: Path | None = None
+    service_url: str | None = None
+    platform: str = sys.platform
 
     @property
     def skill_source(self) -> Path:
@@ -47,6 +49,8 @@ class Paths:
 
     @property
     def python(self) -> Path:
+        if self.platform == "win32":
+            return self.root / ".venv" / "Scripts" / "python.exe"
         return self.root / ".venv" / "bin" / "python"
 
     @property
@@ -66,6 +70,13 @@ class Paths:
         if client == "claude-code":
             return self.home / ".claude.json"
         if client == "claude-desktop":
+            if self.platform == "win32":
+                app_data = (
+                    Path(os.environ["APPDATA"])
+                    if self.home == Path.home() and os.environ.get("APPDATA")
+                    else self.home / "AppData" / "Roaming"
+                )
+                return app_data / "Claude" / "claude_desktop_config.json"
             return (
                 self.home
                 / "Library"
@@ -114,8 +125,13 @@ def _server_entry(paths: Paths, client: str) -> dict[str, Any]:
         # Generation requests can queue behind the resident model.  Keep the
         # client timeout above the measured single-request time.
         base.update({"tool_timeout_sec": 600, "startup_timeout_sec": 30})
+    environment: dict[str, str] = {}
     if paths.engine_root is not None:
-        base["env"] = {"SPRITELOOM_ENGINE_ROOT": str(paths.engine_root)}
+        environment["SPRITELOOM_ENGINE_ROOT"] = str(paths.engine_root)
+    if paths.service_url is not None:
+        environment["SPRITELOOM_URL"] = paths.service_url
+    if environment:
+        base["env"] = environment
     return base
 
 
@@ -532,6 +548,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="separate model-engine repository; passed as SPRITELOOM_ENGINE_ROOT",
     )
     parser.add_argument(
+        "--service-url",
+        help="connect to an existing WebSocket engine; passed as SPRITELOOM_URL",
+    )
+    parser.add_argument(
         "--home",
         type=Path,
         help="home directory override for tests or a controlled install",
@@ -560,7 +580,12 @@ def main(argv: list[str] | None = None) -> int:
         engine_root = _resolve_path(args.engine_root) if args.engine_root else None
         clients = _selected_clients(args)
         return _run(
-            Paths(root=root, home=home, engine_root=engine_root),
+            Paths(
+                root=root,
+                home=home,
+                engine_root=engine_root,
+                service_url=args.service_url,
+            ),
             clients,
             apply=args.apply,
             replace=args.replace,
