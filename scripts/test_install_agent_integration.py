@@ -16,6 +16,11 @@ import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "install-agent-integration.py"
+VENV_PYTHON = (
+    Path("Scripts/python.exe")
+    if sys.platform == "win32"
+    else Path("bin/python")
+)
 
 
 class InstallerTests(unittest.TestCase):
@@ -73,8 +78,8 @@ class InstallerTests(unittest.TestCase):
             )
             desktop_config = (
                 home
-                / "Library"
-                / "Application Support"
+                / (Path("AppData") / "Roaming" if sys.platform == "win32"
+                   else Path("Library") / "Application Support")
                 / "Claude"
                 / "claude_desktop_config.json"
             )
@@ -90,7 +95,7 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(codex["other"]["secret"], "keep")
             self.assertEqual(
                 codex["mcp_servers"]["spriteloom"]["command"],
-                str(root.resolve() / ".venv" / "bin" / "python"),
+                str(root.resolve() / ".venv" / VENV_PYTHON),
             )
             self.assertEqual(
                 codex["mcp_servers"]["spriteloom"]["args"],
@@ -115,8 +120,8 @@ class InstallerTests(unittest.TestCase):
             self.assertFalse(
                 (
                     home
-                    / "Library"
-                    / "Application Support"
+                    / (Path("AppData") / "Roaming" if sys.platform == "win32"
+                       else Path("Library") / "Application Support")
                     / "Claude"
                     / "skills"
                     / "spriteloom"
@@ -161,7 +166,7 @@ class InstallerTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             installed = json.loads(config.read_text(encoding="utf-8"))
-            self.assertEqual(installed["mcpServers"]["spriteloom"]["command"], str(root.resolve() / ".venv" / "bin" / "python"))
+            self.assertEqual(installed["mcpServers"]["spriteloom"]["command"], str(root.resolve() / ".venv" / VENV_PYTHON))
             self.assertFalse((skill / "user-file.txt").exists())
             self.assertTrue(list(home.rglob("*.bak-*")))
 
@@ -192,6 +197,8 @@ class InstallerTests(unittest.TestCase):
                 "--apply",
                 "--engine-root",
                 str(engine_root),
+                "--service-url",
+                "ws://127.0.0.1:8765",
                 root=mcp_root,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
@@ -199,9 +206,15 @@ class InstallerTests(unittest.TestCase):
                 (home / ".codex" / "config.toml").read_text(encoding="utf-8")
             )
             entry = config["mcp_servers"]["spriteloom"]
-            self.assertEqual(entry["command"], str(mcp_root.resolve() / ".venv" / "bin" / "python"))
+            self.assertEqual(entry["command"], str(mcp_root.resolve() / ".venv" / VENV_PYTHON))
             self.assertEqual(entry["args"], [str(mcp_root.resolve() / "mcp_entry.py")])
-            self.assertEqual(entry["env"], {"SPRITELOOM_ENGINE_ROOT": str(engine_root)})
+            self.assertEqual(
+                entry["env"],
+                {
+                    "SPRITELOOM_ENGINE_ROOT": str(engine_root),
+                    "SPRITELOOM_URL": "ws://127.0.0.1:8765",
+                },
+            )
 
     def test_codex_replace_preserves_unrelated_toml_sections(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -224,9 +237,34 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(parsed["mcp_servers"]["other"]["value"], "keep")
             self.assertEqual(
                 parsed["mcp_servers"]["spriteloom"]["command"],
-                str(root.resolve() / ".venv" / "bin" / "python"),
+                str(root.resolve() / ".venv" / VENV_PYTHON),
             )
             self.assertTrue(list(home.rglob("config.toml.bak-*")))
+
+    def test_paths_use_native_venv_and_claude_desktop_locations(self) -> None:
+        from importlib.util import module_from_spec, spec_from_file_location
+
+        spec = spec_from_file_location("install_agent_integration", SCRIPT)
+        assert spec is not None and spec.loader is not None
+        module = module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+
+        root = Path("/project")
+        home = Path("/home/user")
+        windows = module.Paths(root, home, platform="win32")
+        self.assertEqual(windows.python, root / ".venv" / "Scripts" / "python.exe")
+        self.assertEqual(
+            windows.config_target("claude-desktop"),
+            home / "AppData" / "Roaming" / "Claude" / "claude_desktop_config.json",
+        )
+
+        macos = module.Paths(root, home, platform="darwin")
+        self.assertEqual(macos.python, root / ".venv" / "bin" / "python")
+        self.assertEqual(
+            macos.config_target("claude-desktop"),
+            home / "Library" / "Application Support" / "Claude" / "claude_desktop_config.json",
+        )
 
 
 if __name__ == "__main__":
