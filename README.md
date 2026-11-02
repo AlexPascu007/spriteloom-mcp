@@ -14,40 +14,52 @@ and the [Apache 2.0 license](LICENSE).
 
 ## Install
 
-First set up the engine on Apple Silicon:
+Set up the model engine for your machine first. The engine supports NVIDIA
+CUDA on Windows and MLX on Apple Silicon macOS; follow its
+[Windows or macOS setup guide](https://github.com/AlexPascu007/spriteloom-mlx/blob/main/ASEPRITE.md#install).
+Then install this MCP server in its own Python environment:
 
 ```sh
-git clone https://github.com/AlexPascu007/spriteloom-mlx.git
-cd spriteloom-mlx
-./setup-mlx.sh
-cd ..
 git clone https://github.com/AlexPascu007/spriteloom-mcp.git
 cd spriteloom-mcp
 uv venv --python 3.12
 uv pip install -e .
 ```
 
+On Windows, use `py -3.12 -m venv .venv` and
+`.venv\Scripts\python.exe -m pip install -e .` if you are not using `uv`.
+
 Keep the two repositories in the same parent directory, or set
 `SPRITELOOM_ENGINE_ROOT` to the absolute engine path. The MCP environment
 contains no model runtime. The engine uses its own Python environment.
+To connect a client running on a different computer to an already-running
+engine, pass `--service-url ws://host:8765` to the integration installer
+instead. Use a trusted network or tunnel for that connection.
 
-Preview the client changes, then apply them:
+Preview the Codex, Claude Code, or Claude Desktop configuration changes, then
+apply them:
+
+```powershell
+.venv\Scripts\python.exe scripts\install-agent-integration.py --all --engine-root ..\spriteloom-mlx
+.venv\Scripts\python.exe scripts\install-agent-integration.py --all --engine-root ..\spriteloom-mlx --apply
+```
 
 ```sh
 .venv/bin/python scripts/install-agent-integration.py --all --engine-root ../spriteloom-mlx
 .venv/bin/python scripts/install-agent-integration.py --all --engine-root ../spriteloom-mlx --apply
 ```
 
-The installer supports Codex, Claude Code, and Claude Desktop on macOS.
-It preserves other configuration entries and makes backups before changes.
+The installer supports Codex, Claude Code, and Claude Desktop on Windows and
+macOS. It preserves other configuration entries and makes backups before changes.
 Use `--replace` to update an existing SpriteLoom entry. Restart the clients
 after installation. The skill is installed for Codex and Claude Code.
 Claude Desktop receives the MCP tools; see [MCP.md](MCP.md) for skill use
 and manual configuration.
 
-For another MCP client, use the absolute path to `.venv/bin/python` as the
-command, with the absolute path to `mcp_entry.py` as its only argument.
-Set `SPRITELOOM_ENGINE_ROOT` in the server environment.
+For another MCP client, use the absolute path to `.venv/Scripts/python.exe`
+on Windows or `.venv/bin/python` on macOS as the command, with the absolute
+path to `mcp_entry.py` as its only argument. Set `SPRITELOOM_ENGINE_ROOT` in
+the server environment.
 
 ## Tools
 

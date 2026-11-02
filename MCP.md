@@ -13,10 +13,17 @@ are not required.
 
 ## Install
 
-The installer is standard-library Python. It performs a dry run by default:
+The installer is standard-library Python. It performs a dry run by default.
+On Windows:
+
+```powershell
+py -3 scripts\install-agent-integration.py --root C:\path\to\spriteloom-mcp --all
+```
+
+On macOS:
 
 ```sh
-python3 scripts/install-agent-integration.py --root /absolute/path/to/spriteloom-mcp --all
+python3 scripts/install-agent-integration.py --root /path/to/spriteloom-mcp --all
 ```
 
 Review the paths and use `--apply` to write the selected integration:
@@ -26,7 +33,8 @@ python3 scripts/install-agent-integration.py \
   --root /absolute/path/to/spriteloom-mcp --all --apply
 ```
 
-The command uses the MCP repository's `.venv/bin/python` and
+The command uses the MCP repository's platform-native virtual-environment
+Python (`.venv/Scripts/python.exe` on Windows or `.venv/bin/python` on macOS) and
 `/absolute/path/to/spriteloom-mcp/mcp_entry.py`. If the model engine is in a
 separate checkout, pass its path explicitly:
 
@@ -43,11 +51,17 @@ engine. Without that option, the entry point uses its normal local engine
 configuration. Refresh or restart a client after installing its skill so the
 new skill can be discovered. The installer writes these entries:
 
+For a client on another computer, use `--service-url ws://host:8765` instead
+of `--engine-root`. This sets `SPRITELOOM_URL` and connects to an engine that
+is already running. The MCP server does not start or stop an external engine;
+use a trusted network or tunnel.
+
 | Client | MCP configuration | Skill installation |
 | --- | --- | --- |
 | Codex | `~/.codex/config.toml` under `[mcp_servers.spriteloom]` | `~/.codex/skills/spriteloom` |
 | Claude Code | `~/.claude.json` under `.mcpServers.spriteloom` | `~/.claude/skills/spriteloom` |
-| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` under `.mcpServers.spriteloom` | MCP config only |
+| Claude Desktop (Windows) | `%APPDATA%\Claude\claude_desktop_config.json` under `.mcpServers.spriteloom` | MCP config only |
+| Claude Desktop (macOS) | `~/Library/Application Support/Claude/claude_desktop_config.json` under `.mcpServers.spriteloom` | MCP config only |
 
 The installer does not claim that Claude Desktop loads `~/.claude/skills`.
 Attach or configure the skill through the Desktop feature that provides skill
@@ -68,6 +82,17 @@ finish:
 [mcp_servers.spriteloom]
 command = "/absolute/path/to/spriteloom-mcp/.venv/bin/python"
 args = ["/absolute/path/to/spriteloom-mcp/mcp_entry.py"]
+tool_timeout_sec = 600
+startup_timeout_sec = 30
+```
+
+On Windows, use the virtual-environment interpreter path with forward slashes
+in TOML, for example:
+
+```toml
+[mcp_servers.spriteloom]
+command = "C:/path/to/spriteloom-mcp/.venv/Scripts/python.exe"
+args = ["C:/path/to/spriteloom-mcp/mcp_entry.py"]
 tool_timeout_sec = 600
 startup_timeout_sec = 30
 ```
@@ -112,7 +137,7 @@ paths.
 
 ## Verification
 
-Run the installer tests with the repository Python:
+Run the installer tests with the repository Python on Windows or macOS:
 
 ```sh
 python3 scripts/test_install_agent_integration.py
